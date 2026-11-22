@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+	<meta charset="UTF-8">
+	<title>Hotel ZENTELLIA — Abastecimento</title>
+	<script>
+		const NOME_HOTEL = sessionStorage.getItem("nome_hotel") || "ZENTELLIA";
+
+		function obter_estado() {
+			var salvo = sessionStorage.getItem("estado_hotel");
+			return salvo ? JSON.parse(salvo) : { usuario_logado: "Operador" };
+		}
+
+		function formatar_moeda(valor) {
+			return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+		}
+
+		function ler_numero(mensagem) {
+			var entrada = prompt(mensagem);
+			var texto = entrada ? entrada.trim().replace(",", ".") : "";
+			return texto === "" ? NaN : Number(texto);
+		}
+
+		function abastecer_carros() {
+			var estado = obter_estado();
+			const CAPACIDADE_TANQUE = 42;
+			var postos = ["Wayne Oil", "Stark Petrol"];
+			var resultados = [];
+
+			for (var i = 0; i < postos.length; i++) {
+				var posto = postos[i];
+
+				var preco_alcool = NaN;
+				while (isNaN(preco_alcool) || preco_alcool <= 0) {
+					preco_alcool = ler_numero("HOTEL " + NOME_HOTEL + " - [Abastecimento — " + posto + "]\nPreço do Álcool (R$):");
+					if (isNaN(preco_alcool) || preco_alcool <= 0) alert("Preço inválido.");
+				}
+
+				var preco_gasolina = NaN;
+				while (isNaN(preco_gasolina) || preco_gasolina <= 0) {
+					preco_gasolina = ler_numero("HOTEL " + NOME_HOTEL + " - [Abastecimento — " + posto + "]\nPreço da Gasolina (R$):");
+					if (isNaN(preco_gasolina) || preco_gasolina <= 0) alert("Preço inválido.");
+				}
+
+				var alcool_vantajoso = preco_alcool <= preco_gasolina * 0.70;
+				var combustivel = alcool_vantajoso ? "álcool" : "gasolina";
+				var preco_final = alcool_vantajoso ? preco_alcool : preco_gasolina;
+				var custo_total = preco_final * CAPACIDADE_TANQUE;
+
+				resultados.push({
+					posto: posto,
+					combustivel: combustivel,
+					total: custo_total
+				});
+			}
+
+			var resumo_postos = resultados.map(function (r) {
+				var label = r.combustivel === "álcool" ? "Álcool" : "Gasolina";
+				return r.posto + ": melhor opção = " + label + " | Total (42L) = " + formatar_moeda(r.total);
+			}).join("\n");
+
+			var ranking = resultados.slice().sort(function (a, b) {
+				return a.total - b.total;
+			});
+
+			var texto_ranking = ranking.map(function (r, idx) {
+				return (idx + 1) + "º " + r.posto + " (" + r.combustivel + ") — " + formatar_moeda(r.total);
+			}).join("\n");
+
+			var melhor = ranking[0];
+
+			alert(
+				"HOTEL " + NOME_HOTEL + " — [Abastecimento]\n\n" +
+				resumo_postos + "\n\n" +
+				"Ranking (menor para maior custo):\n" +
+				texto_ranking + "\n\n" +
+				estado.usuario_logado +
+				", é mais barato abastecer com " +
+				melhor.combustivel +
+				" no posto " +
+				melhor.posto +
+				"."
+			);
+
+			window.location.href = "index.html";
+		}
+
+		window.onload = abastecer_carros;
+	</script>
+</head>
+
+<body>
+
+</body>
+
+</html>

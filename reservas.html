@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+	<meta charset="UTF-8">
+	<title>Hotel ZENTELLIA — Reservas de Quartos</title>
+	<script>
+		const NOME_HOTEL = sessionStorage.getItem("nome_hotel") || "ZENTELLIA";
+
+		function obter_estado() {
+			var salvo = sessionStorage.getItem("estado_hotel");
+			if (salvo) return JSON.parse(salvo);
+			return {
+				autenticado: true,
+				usuario_logado: "Operador",
+				quartos: Array.from({ length: 20 }, function (_, i) {
+					return { numero: i + 1, ocupado: false, hospede: null, tipo: null };
+				}),
+				reservas_confirmadas: [],
+				lista_hospedes: [],
+				eventos_confirmados: []
+			};
+		}
+
+		function salvar_estado(estado) {
+			sessionStorage.setItem("estado_hotel", JSON.stringify(estado));
+		}
+
+		function formatar_moeda(valor) {
+			return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+		}
+
+		function ler_texto(mensagem) {
+			var entrada = prompt(mensagem);
+			return entrada ? entrada.trim() : "";
+		}
+
+		function ler_numero(mensagem) {
+			var texto = ler_texto(mensagem).replace(",", ".");
+			return texto === "" ? NaN : Number(texto);
+		}
+
+		function ler_inteiro(mensagem) {
+			var num = ler_numero(mensagem);
+			return Number.isInteger(num) ? num : NaN;
+		}
+
+		function ler_confirmacao(mensagem) {
+			while (true) {
+				var resp = ler_texto(mensagem).toUpperCase();
+				if (resp === "S" || resp === "N") return resp;
+				alert("Responda apenas com S ou N.");
+			}
+		}
+
+		function gerar_mapa_quartos(quartos) {
+			var linhas = ["Mapa de Quartos (L = Livre | O = Ocupado):"];
+			for (var l = 0; l < 4; l++) {
+				var colunas = [];
+				for (var c = 0; c < 5; c++) {
+					var q = quartos[l * 5 + c];
+					var num = String(q.numero).padStart(2, "0");
+					var status = q.ocupado ? "O" : "L";
+					colunas.push("[" + num + ":" + status + "]");
+				}
+				linhas.push(colunas.join("  "));
+			}
+			return linhas.join("\n");
+		}
+
+		function voltar_menu() {
+			window.location.href = "index.html";
+		}
+
+		function reserva_quartos() {
+			var estado = obter_estado();
+
+			var diaria = ler_numero("HOTEL " + NOME_HOTEL + " - [Reservas]\nInforme o valor da diária:");
+			var diarias = ler_inteiro("HOTEL " + NOME_HOTEL + " - [Reservas]\nInforme a quantidade de diárias (1-30):");
+
+			if (isNaN(diaria) || diaria <= 0 || isNaN(diarias) || diarias < 1 || diarias > 30) {
+				alert("Valor inválido, " + estado.usuario_logado);
+				voltar_menu();
+				return;
+			}
+
+			var nome_hospede = "";
+			while (nome_hospede === "") {
+				nome_hospede = ler_texto("[Reservas]\nInforme o nome completo do hóspede:");
+				if (nome_hospede === "") alert("Informe um nome válido.");
+			}
+
+			var tipos = {
+				S: { nome: "Standard", fator: 1.00 },
+				E: { nome: "Executivo", fator: 1.35 },
+				L: { nome: "Luxo", fator: 1.65 }
+			};
+
+			var tipo_escolhido = "";
+			while (!tipos[tipo_escolhido]) {
+				tipo_escolhido = ler_texto(
+					"[Reservas]\nTipo de quarto:\nS - Standard (1.00)\nE - Executivo (1.35)\nL - Luxo (1.65)"
+				).toUpperCase();
+				if (!tipos[tipo_escolhido]) alert("Tipo inválido. Digite S, E ou L.");
+			}
+
+			var livres = estado.quartos.filter(function (q) { return !q.ocupado; });
+			if (livres.length === 0) {
+				alert("Todos os quartos estão ocupados.");
+				voltar_menu();
+				return;
+			}
+
+			var quarto_selecionado = null;
+			while (!quarto_selecionado) {
+				var num_quarto = ler_inteiro("[Reservas]\nEscolha um quarto (1-20):");
+				if (isNaN(num_quarto) || num_quarto < 1 || num_quarto > 20) {
+					alert("Número inválido. Escolha entre 1 e 20.");
+					continue;
+				}
+
+				var quarto_obj = estado.quartos[num_quarto - 1];
+				if (quarto_obj.ocupado) {
+					var lista_livres = estado.quartos
+						.filter(function (q) { return !q.ocupado; })
+						.map(function (q) { return q.numero; })
+						.join(", ");
+					alert("Quarto já está ocupado.\nQuartos livres disponíveis: " + lista_livres);
+				} else {
+					quarto_selecionado = quarto_obj;
+				}
+			}
+
+			var info_tipo = tipos[tipo_escolhido];
+			var subtotal = diaria * diarias * info_tipo.fator;
+			var taxa_servico = subtotal * 0.10;
+			var total_final = subtotal + taxa_servico;
+
+			var resumo =
+				"[Reservas — Resumo]\n" +
+				"Hóspede: " + nome_hospede + "\n" +
+				"Quarto: " + quarto_selecionado.numero + " (" + info_tipo.nome + ")\n" +
+				"Diárias: " + diarias + "\n" +
+				"Subtotal: " + formatar_moeda(subtotal) + "\n" +
+				"Taxa de serviço (10%): " + formatar_moeda(taxa_servico) + "\n" +
+				"Total: " + formatar_moeda(total_final) + "\n\n" +
+				estado.usuario_logado + ", confirma a reserva? (S/N)";
+
+			var confirmacao = ler_confirmacao(resumo);
+
+			if (confirmacao === "S") {
+				quarto_selecionado.ocupado = true;
+				quarto_selecionado.hospede = nome_hospede;
+				quarto_selecionado.tipo = info_tipo.nome;
+
+				estado.reservas_confirmadas.push({
+					hospede: nome_hospede,
+					quarto: quarto_selecionado.numero,
+					tipo: info_tipo.nome,
+					diarias: diarias,
+					total: total_final
+				});
+
+				salvar_estado(estado);
+				var mapa = gerar_mapa_quartos(estado.quartos);
+				console.log(mapa);
+				alert("Reserva efetuada com sucesso.\n\n" + mapa);
+			} else {
+				var mapa_atual = gerar_mapa_quartos(estado.quartos);
+				console.log(mapa_atual);
+				alert("Reserva não efetuada.\n\n" + mapa_atual);
+			}
+
+			voltar_menu();
+		}
+
+		window.onload = reserva_quartos;
+	</script>
+</head>
+
+<body>
+
+</body>
+
+</html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+	<meta charset="UTF-8">
+	<title>Hotel ZENTELLIA — Manutenção de Ar-Condicionado</title>
+	<script>
+		const NOME_HOTEL = sessionStorage.getItem("nome_hotel") || "ZENTELLIA";
+
+		function obter_estado() {
+			var salvo = sessionStorage.getItem("estado_hotel");
+			return salvo ? JSON.parse(salvo) : { usuario_logado: "Operador" };
+		}
+
+		function formatar_moeda(valor) {
+			return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+		}
+
+		function ler_numero(mensagem) {
+			var entrada = prompt(mensagem);
+			if (entrada === null) return null;
+			var texto = entrada.trim().replace(",", ".");
+			return texto === "" ? NaN : Number(texto);
+		}
+
+		function ler_inteiro(mensagem) {
+			var num = ler_numero(mensagem);
+			if (num === null) return null;
+			return Number.isInteger(num) ? num : NaN;
+		}
+
+		function ler_confirmacao(mensagem) {
+			while (true) {
+				var entrada = prompt(mensagem);
+				if (entrada === null) return "N";
+				var resp = entrada.trim().toUpperCase();
+				if (resp === "S" || resp === "N") return resp;
+				alert("Responda apenas com S ou N.");
+			}
+		}
+
+		function voltar_menu() {
+			window.location.href = "index.html";
+		}
+
+		function ar_condicionado() {
+			var estado = obter_estado();
+			var orcamentos = [];
+
+			while (true) {
+				var empresa = "";
+				while (empresa === "") {
+					var entrada_empresa = prompt("HOTEL " + NOME_HOTEL + " - [Ar-Condicionado]\nNome da empresa:");
+					if (entrada_empresa === null) {
+						voltar_menu();
+						return;
+					}
+					empresa = entrada_empresa.trim();
+					if (empresa === "") alert("Informe o nome da empresa.");
+				}
+
+				var valor_aparelho = NaN;
+				while (isNaN(valor_aparelho) || valor_aparelho < 0) {
+					valor_aparelho = ler_numero("[Ar-Condicionado]\nValor por aparelho (R$):");
+					if (valor_aparelho === null) { voltar_menu(); return; }
+					if (isNaN(valor_aparelho) || valor_aparelho < 0) alert("Valor inválido.");
+				}
+
+				var quantidade = NaN;
+				while (isNaN(quantidade) || quantidade <= 0) {
+					quantidade = ler_inteiro("[Ar-Condicionado]\nQuantidade de aparelhos:");
+					if (quantidade === null) { voltar_menu(); return; }
+					if (isNaN(quantidade) || quantidade <= 0) alert("Quantidade inválida.");
+				}
+
+				var perc_desconto = NaN;
+				while (isNaN(perc_desconto) || perc_desconto < 0 || perc_desconto > 100) {
+					perc_desconto = ler_numero("[Ar-Condicionado]\nPercentual de desconto (%):");
+					if (perc_desconto === null) { voltar_menu(); return; }
+					if (isNaN(perc_desconto) || perc_desconto < 0 || perc_desconto > 100) {
+						alert("Percentual inválido (0 a 100).");
+					}
+				}
+
+				var minimo_desconto = NaN;
+				while (isNaN(minimo_desconto) || minimo_desconto < 0) {
+					minimo_desconto = ler_inteiro("[Ar-Condicionado]\nQuantidade mínima de aparelhos para desconto:");
+					if (minimo_desconto === null) { voltar_menu(); return; }
+					if (isNaN(minimo_desconto) || minimo_desconto < 0) alert("Quantidade inválida.");
+				}
+
+				var deslocamento = NaN;
+				while (isNaN(deslocamento) || deslocamento < 0) {
+					deslocamento = ler_numero("[Ar-Condicionado]\nValor fixo de deslocamento (R$):");
+					if (deslocamento === null) { voltar_menu(); return; }
+					if (isNaN(deslocamento) || deslocamento < 0) alert("Valor inválido.");
+				}
+
+				var bruto = valor_aparelho * quantidade;
+				var desconto = quantidade >= minimo_desconto ? bruto * (perc_desconto / 100) : 0;
+				var total = bruto - desconto + deslocamento;
+
+				orcamentos.push({ empresa: empresa, total: total });
+				alert("O serviço de " + empresa + " custará " + formatar_moeda(total));
+
+				if (orcamentos.length < 2) {
+					alert("Informe ao menos duas empresas para comparação.");
+					continue;
+				}
+
+				var continuar = ler_confirmacao(
+					"Deseja informar novos dados, " + estado.usuario_logado + "? (S/N)"
+				);
+				if (continuar === "N") break;
+			}
+
+			var ordenados = orcamentos.slice().sort(function (a, b) {
+				return a.total - b.total;
+			});
+
+			var menor = ordenados[0];
+			var maior = ordenados[ordenados.length - 1];
+			var diferenca = maior.total > 0 ? ((maior.total - menor.total) / maior.total) * 100 : 0;
+
+			alert(
+				"[Ar-Condicionado — Resultado Final]\n\n" +
+				"O orçamento de menor valor é o de " + menor.empresa + " por " + formatar_moeda(menor.total) + "\n" +
+				"Maior orçamento: " + maior.empresa + " — " + formatar_moeda(maior.total) + "\n" +
+				"Diferença percentual entre melhor e pior proposta: " + diferenca.toFixed(2) + "%"
+			);
+
+			voltar_menu();
+		}
+
+		window.onload = ar_condicionado;
+	</script>
+</head>
+
+<body>
+
+</body>
+
+</html>

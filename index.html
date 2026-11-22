@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+	<meta charset="UTF-8">
+	<title>Hotel ZENTELLIA — Menu Principal</title>
+	<script>
+		const NOME_HOTEL = "ZENTELLIA";
+
+		function obter_estado() {
+			var salvo = sessionStorage.getItem("estado_hotel");
+			if (salvo) {
+				return JSON.parse(salvo);
+			}
+			var inicial = {
+				autenticado: false,
+				usuario_logado: "",
+				quartos: Array.from({ length: 20 }, function (_, i) {
+					return { numero: i + 1, ocupado: false, hospede: null, tipo: null };
+				}),
+				reservas_confirmadas: [],
+				lista_hospedes: [],
+				eventos_confirmados: []
+			};
+			sessionStorage.setItem("estado_hotel", JSON.stringify(inicial));
+			return inicial;
+		}
+
+		function salvar_estado(estado) {
+			sessionStorage.setItem("estado_hotel", JSON.stringify(estado));
+		}
+
+		function autenticar_usuario() {
+			const SENHA_OBRIGATORIA = "2678";
+			const MAX_TENTATIVAS = 3;
+			var estado = obter_estado();
+
+			alert("Bem-vindo ao " + NOME_HOTEL);
+
+			var nome = "";
+			while (nome === "") {
+				var entrada_nome = prompt("Informe o nome do usuário:");
+				nome = entrada_nome ? entrada_nome.trim() : "";
+				if (nome === "") {
+					alert("O nome do usuário não pode ficar vazio.");
+				}
+			}
+
+			var tentativas = 0;
+			while (tentativas < MAX_TENTATIVAS) {
+				var entrada_senha = prompt("Informe a senha de acesso:");
+				var senha = entrada_senha ? entrada_senha.trim() : "";
+
+				if (senha === SENHA_OBRIGATORIA) {
+					estado.autenticado = true;
+					estado.usuario_logado = nome;
+					salvar_estado(estado);
+
+					alert(
+						"Bem-vindo ao Hotel " +
+						NOME_HOTEL +
+						", " +
+						estado.usuario_logado +
+						". É um imenso prazer ter você por aqui!"
+					);
+					return true;
+				}
+
+				tentativas++;
+				var restantes = MAX_TENTATIVAS - tentativas;
+				if (restantes > 0) {
+					alert("Senha incorreta. Tentativas restantes: " + restantes + ".");
+				}
+			}
+
+			alert("Número máximo de tentativas excedido. Sistema bloqueado e encerrado.");
+			return false;
+		}
+
+		function inicio() {
+			var escolha = parseInt(
+				prompt(
+					"HOTEL " + NOME_HOTEL + " — MENU PRINCIPAL\n\n" +
+					"Selecione uma opção:\n" +
+					"1. Reservas de Quartos\n" +
+					"2. Cadastro de Hóspedes\n" +
+					"3. Eventos\n" +
+					"4. Ar-Condicionado\n" +
+					"5. Abastecimento\n" +
+					"6. Relatórios Operacionais\n" +
+					"7. Sair"
+				)
+			);
+
+			if (escolha === 1) {
+				window.location.href = "reservas.html";
+			} else if (escolha === 2) {
+				window.location.href = "hospedes.html";
+			} else if (escolha === 3) {
+				window.location.href = "eventos.html";
+			} else if (escolha === 4) {
+				window.location.href = "ar_condicionado.html";
+			} else if (escolha === 5) {
+				window.location.href = "abastecimento.html";
+			} else if (escolha === 6) {
+				window.location.href = "relatorios.html";
+			} else if (escolha === 7) {
+				sair();
+			} else {
+				erro();
+			}
+		}
+
+		function erro() {
+			alert("Por favor, informe um número entre 1 e 7.");
+			inicio();
+		}
+
+		function sair() {
+			var estado = obter_estado();
+			var confirma = confirm("Você deseja sair?");
+			if (confirma) {
+				alert("Muito obrigado e até logo, " + estado.usuario_logado + ".");
+				sessionStorage.removeItem("estado_hotel");
+				sessionStorage.removeItem("nome_hotel");
+				window.close();
+			} else {
+				inicio();
+			}
+		}
+
+		window.onload = function () {
+			sessionStorage.setItem("nome_hotel", NOME_HOTEL);
+			var estado = obter_estado();
+
+			if (estado.autenticado) {
+				inicio();
+			} else if (autenticar_usuario()) {
+				inicio();
+			}
+		};
+	</script>
+</head>
+
+<body>
+
+</body>
+
+</html>

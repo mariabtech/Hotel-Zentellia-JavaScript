@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+	<meta charset="UTF-8">
+	<title>Hotel ZENTELLIA — Relatórios Operacionais</title>
+	<script>
+		const NOME_HOTEL = sessionStorage.getItem("nome_hotel") || "ZENTELLIA";
+
+		function obter_estado() {
+			var salvo = sessionStorage.getItem("estado_hotel");
+			if (salvo) return JSON.parse(salvo);
+			return {
+				quartos: Array.from({ length: 20 }, function (_, i) {
+					return { numero: i + 1, ocupado: false };
+				}),
+				reservas_confirmadas: [],
+				lista_hospedes: [],
+				eventos_confirmados: []
+			};
+		}
+
+		function formatar_moeda(valor) {
+			return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+		}
+
+		function relatorios_operacionais() {
+			var estado = obter_estado();
+
+			var total_quartos = estado.quartos.length;
+			var ocupados = estado.quartos.filter(function (q) { return q.ocupado; }).length;
+			var taxa_ocupacao = (ocupados / total_quartos) * 100;
+
+			var total_reservas = estado.reservas_confirmadas.length;
+			var total_hospedes = estado.lista_hospedes.length;
+			var total_eventos = estado.eventos_confirmados.length;
+
+			var receita_hospedagem = estado.reservas_confirmadas.reduce(function (acc, r) {
+				return acc + r.total;
+			}, 0);
+
+			var receita_eventos = estado.eventos_confirmados.reduce(function (acc, e) {
+				return acc + e.total;
+			}, 0);
+
+			var receita_geral = receita_hospedagem + receita_eventos;
+
+			var linhas = [
+				["Indicador Operacional", "Valor"],
+				["Reservas de quartos confirmadas", String(total_reservas)],
+				["Taxa de ocupação atual", taxa_ocupacao.toFixed(1) + "% (" + ocupados + "/20)"],
+				["Hóspedes cadastrados", String(total_hospedes)],
+				["Eventos confirmados", String(total_eventos)],
+				["Receita acumulada — Hospedagem", formatar_moeda(receita_hospedagem)],
+				["Receita acumulada — Eventos", formatar_moeda(receita_eventos)],
+				["Receita acumulada — Total Geral", formatar_moeda(receita_geral)]
+			];
+
+			var sep = "+------------------------------------+----------------------+";
+			var tabela = [sep];
+
+			for (var i = 0; i < linhas.length; i++) {
+				var col1 = linhas[i][0].padEnd(34);
+				var col2 = linhas[i][1].padStart(20);
+				tabela.push("| " + col1 + " | " + col2 + " |");
+				if (i === 0 || i === linhas.length - 2 || i === linhas.length - 1) {
+					tabela.push(sep);
+				}
+			}
+
+			var texto = "[Relatórios Operacionais — Hotel " + NOME_HOTEL + "]\n\n" + tabela.join("\n");
+			console.log(texto);
+			alert(texto);
+
+			window.location.href = "index.html";
+		}
+
+		window.onload = relatorios_operacionais;
+	</script>
+</head>
+
+<body>
+
+</body>
+
+</html>
